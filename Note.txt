@@ -1,0 +1,26 @@
+
+TensorFlow Note:
+__________________
+	The idea behind the feed_dict is to pass values from outside the graph, into the graph. Tensor objects are values that are into the graph.
+
+
+Different Resnet
+________________________
+	https://github.com/KaimingHe/deep-residual-networks#disclaimer-and-known-issues
+	Resnet50
+	http://ethereon.github.io/netscope/#/gist/db945b393d40bfa26006
+	Wide Residual Network
+	https://arxiv.org/pdf/1605.07146.pdf
+	Wider or Deeper
+
+	
+
+Yann Lecun Talk
+_____________
+Conv on Graph 
+https://arxiv.org/abs/1506.05163
+Equivalent Good of loss surface
+https://arxiv.org/pdf/1412.0233.pdf
+Energy based GAN
+
+
