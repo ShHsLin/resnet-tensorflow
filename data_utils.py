@@ -27,7 +27,8 @@ def get_CIFAR10_data(num_training=48000, num_validation=1000, num_test=1000):
     condensed to a single function.
     """
     # Load the raw CIFAR-10 data
-    cifar10_dir = '/work/datasets/CIFAR10/'
+    # cifar10_dir = '/work/datasets/CIFAR10/'
+    cifar10_dir = '../CIFAR10/'
     X, y = load_CIFAR10(cifar10_dir)
 
     # Subsample the data

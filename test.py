@@ -9,7 +9,7 @@ from data_utils import get_CIFAR10_data
 data = get_CIFAR10_data()
 for k, v in data.iteritems():
     if 'X' in k:
-        data[k] = np.einsum('ijkl->iklj', v)
+        data[k] = np.einsum('ijkl->iklj', v)/128.
 
     print '%s: ' % k, v.shape
 
@@ -18,8 +18,7 @@ with tf.Session() as sess:
     image_size = 32
     images = tf.placeholder(tf.float32, [None, 32, 32, 3])
     true_out = tf.placeholder(tf.float32, [None, 10])
-    r = ResNet(num_classes=10, is_training=False)
-    r.build(images)
+    r = ResNet(input_placeholder=images, num_classes=10, is_training=False)
     print('ResNet graph build, with # variables: %d' % r.get_var_count())
     model_var = tf.global_variables()
     print('num var in model : %d' % len(model_var))
@@ -36,15 +35,12 @@ with tf.Session() as sess:
         accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
         tf.summary.scalar('accuracy', accuracy)
 
-    train_step = tf.train.AdamOptimizer(0.01).minimize(cost)
-    train_ops = [train_step] + r.bn_train_ops
-    train_step = tf.group(*train_ops)
 
     total_var = tf.global_variables()
     print('total num var in model : %d' % len(total_var))
 
     saver = tf.train.Saver(model_var)
-    ckpt = tf.train.get_checkpoint_state('Model')
+    ckpt = tf.train.get_checkpoint_state('Model/old')
     #ckpt = tf.train.get_checkpoint_state(os.path.dirname('/ResNet/Model'))
     if ckpt and ckpt.model_checkpoint_path:
         saver.restore(sess,ckpt.model_checkpoint_path)

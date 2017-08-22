@@ -5,30 +5,46 @@ import os
 
 
 
-def image_pad_random_crop(x_batch, pad_size=4):
-    batchsize, x_dim, y_dim, _ = x_batch.shape
-    pad_image = np.zeros([batchsize, x_dim + pad_size * 2,
-                          y_dim + pad_size * 2, 3])
-    pad_image[:,pad_size:pad_size + x_dim,
-              pad_size:pad_size+y_dim,:] = x_batch
-    crop_ind = np.random.randint(2*pad_size, size=(2,batchsize))
-    image = np.zeros(x_batch.shape)
-    for i in xrange(batchsize):
-        image[i] = pad_image[i,crop_ind[0,i]:crop_ind[0,i]+x_dim,
-                             crop_ind[1,i]:crop_ind[1,i]+y_dim,:]
+# def image_pad_random_crop(x_batch, pad_size=4):
+#     batchsize, x_dim, y_dim, _ = x_batch.shape
+#     pad_image = np.zeros([batchsize, x_dim + pad_size * 2,
+#                           y_dim + pad_size * 2, 3])
+#     pad_image[:,pad_size:pad_size + x_dim,
+#               pad_size:pad_size+y_dim,:] = x_batch
+#     crop_ind = np.random.randint(2*pad_size, size=(2,batchsize))
+#     image = np.zeros(x_batch.shape)
+#     for i in xrange(batchsize):
+#         image[i] = pad_image[i,crop_ind[0,i]:crop_ind[0,i]+x_dim,
+#                              crop_ind[1,i]:crop_ind[1,i]+y_dim,:]
+# 
+#     np.flip(image[batchsize/2:batchsize], axis=2)
+#     return image
 
-    np.flip(image[batchsize/2:batchsize], axis=2)
-    return image
+def tf_image_augmentation(x_batch, pad_size=4, batchsize=128):
+    images_pad = tf.image.resize_image_with_crop_or_pad(x_batch, 32 + 2 * pad_size,
+                                                        32 + 2 * pad_size)
+    images_pad_crop = tf.random_crop(images_pad, [batchsize, 32, 32, 3])
+    images_aug = tf.map_fn(lambda img: tf.image.random_flip_left_right(img),
+                  images_pad_crop)
+    return images_aug
+
+def tf_identity(x_batch):
+    return tf.identity(x_batch)
 
 
-# Get CIFAR10 DATA
-from data_utils import get_CIFAR10_data
-data = get_CIFAR10_data()
-for k, v in data.iteritems():
-    if 'X' in k:
-        data[k] = np.einsum('ijkl->iklj', v)
 
-    print '%s: ' % k, v.shape
+import read_data
+params={}
+params['data_path']='../CIFAR10/cifar-10-batches-py'
+params['batch_size']=64
+params['mode']=True
+
+CIFAR10 = read_data.CIFAR10(params)
+data={}
+data['X_train']= CIFAR10._train_image_set
+data['y_train']= CIFAR10._train_label_set
+data['X_val']= CIFAR10._val_image_set
+data['y_val']= CIFAR10._val_label_set
 
 
 config = tf.ConfigProto(allow_soft_placement=True) # , log_device_placement=True)
@@ -41,7 +57,14 @@ with tf.device('/gpu:0'):
         num_classes = 10
         images = tf.placeholder(tf.float32, [None, image_size, image_size, 3])
         true_out = tf.placeholder(tf.float32, [None, num_classes])
-        r = ResNet(input_placeholder=images, num_classes=num_classes, is_training=True)
+        aug_or_not = tf.placeholder(tf.bool)
+
+        images_aug = tf.cond(aug_or_not,
+                             lambda: tf_image_augmentation(images),
+                             lambda: tf_identity(images))
+
+        r = ResNet(input_rgb=images_aug,
+                   num_classes=num_classes, is_training=True)
         print('ResNet graph build, with # variables: %d' % r.get_var_count())
 
         # Define Cost, Trainer
@@ -57,9 +80,8 @@ with tf.device('/gpu:0'):
             accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
             tf.summary.scalar('accuracy', accuracy)
 
-         
-        #train_step = tf.train.AdamOptimizer(0.003).minimize(cost)
-        train_step = tf.train.MomentumOptimizer(learning_rate=0.001,
+
+        train_step = tf.train.MomentumOptimizer(learning_rate=0.1,
                                                 momentum=0.9).minimize(cost)
         train_ops = [train_step] + r.bn_train_ops
         train_step = tf.group(*train_ops)
@@ -81,24 +103,34 @@ with tf.device('/gpu:0'):
 
 
         batch_size = 128
+        # x_val = np.array(data['X_val'])
+        # y_val = tf.one_hot(data['y_val'], 10).eval(session=sess)
         num_train = data['X_train'].shape[0]
-        x_val = np.array(data['X_val'])/128.
-        y_val = tf.one_hot(data['y_val'], 10).eval(session=sess)
-        for step_idx in range(22180,80000):
+        num_val   = data['X_val'].shape[0]
+        for step_idx in range(0,50000):
             batch_mask = np.random.choice(num_train, batch_size)
             x_batch = np.array(data['X_train'][batch_mask])
-            x_batch = image_pad_random_crop(x_batch)/128.
+            # x_batch = image_pad_random_crop(x_batch)
             y_batch = tf.one_hot(data['y_train'][batch_mask], 10).eval(session=sess)
-            sess.run([train_step],feed_dict={images: x_batch, true_out: y_batch})
+            sess.run([train_step], feed_dict={images: x_batch,
+                                              true_out: y_batch,
+                                              aug_or_not: r.is_training})
             if step_idx % 10 == 0:
                 print step_idx
-                summary = sess.run(merged, feed_dict={images: x_batch, true_out:
-                                                      y_batch})
+                summary = sess.run(merged, feed_dict={images: x_batch,
+                                                      true_out: y_batch,
+                                                      aug_or_not: r.is_training})
                 train_writer.add_summary(summary, step_idx)
                 train_writer.flush()
                 if step_idx % 100 == 0:
-                    summary = sess.run(merged, feed_dict={images: x_val, true_out:
-                                                          y_val})
+                    r.is_training=False
+                    batch_mask = np.random.choice(num_val, batch_size)
+                    x_val = data['X_val'][batch_mask]
+                    y_val = tf.one_hot(data['y_val'][batch_mask], 10).eval(session=sess)
+                    summary = sess.run(merged, feed_dict={images: x_val,
+                                                          true_out: y_val,
+                                                          aug_or_not: r.is_training})
+                    r.is_training=True
                     val_writer.add_summary(summary, step_idx)
                     val_writer.flush()
                     if step_idx % 1000 == 0:

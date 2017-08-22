@@ -1,19 +1,11 @@
-'''
-Adapted mainly from
-github.com/machrisaa/tensorflow-vgg/blob/master/vgg19_trainable.py
-'''
-
 import tensorflow as tf
 import numpy as np
 from tensorflow.python.training import moving_averages
 from functools import reduce
 
-VGG_MEAN = [103.939, 116.779, 123.68]
-
-
 class ResNet:
     def __init__(self, npy_path=None, is_training=True, dropout=0.5,
-                 input_placeholder=None, num_classes=1000):
+                 input_rgb=None, num_classes=1000):
         if npy_path is not None:
             self.data_dict = np.load(npy_path, encoding='latin1').item()
         else:
@@ -24,7 +16,7 @@ class ResNet:
         self.dropout = dropout
         self.num_classes = num_classes
         self.bn_train_ops = []
-        self.build(input_placeholder)
+        self.build(input_rgb)
         self.model_var_list = tf.global_variables()
         # self.conv_var_list : contain all variables before fully connected
         #                      layer. Could be save/read for transfer learning
@@ -129,9 +121,10 @@ class ResNet:
                               strides=[1, stride_size, stride_size, 1], padding='SAME', name=name)
 
     def batch_norm(self, bottom, phase, scope='bn'):
-        return self._batch_norm(bottom, name=scope)
-    #return tf.contrib.layers.batch_norm(bottom, center=True, scale=True,
-    #                                    is_training=phase, scope=scope, decay=0.9)
+#        return self._batch_norm(bottom, name=scope)
+        return tf.contrib.layers.batch_norm(bottom, center=True, scale=True,
+                                            is_training=phase, scope=scope,
+                                            decay=0.995)
     # https://stackoverflow.com/questions/40879967/how-to-use-batch-normalization-correctly-in-tensorflow
 
     def conv_layer(self, bottom, filter_size, in_channels,
@@ -253,7 +246,7 @@ class ResNet:
         # Return the number of true entries.
         return tf.reduce_mean(cross_entropy, name='xentropy_mean')
 
-    def training(loss, optimizer_name, learning_rate):
+    def training_step(loss, optimizer_name, learning_rate):
         """Sets up the training Ops.
         Creates a summarizer to track the loss over time in TensorBoard.
         Creates an optimizer and applies the gradients to all trainable variables.
