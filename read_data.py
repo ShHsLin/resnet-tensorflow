@@ -1,25 +1,19 @@
-'''/
+'''
 Author: Yu Wang(wangyu@in.tum.de)
 LICENSE: Open source.
 This script processes row CIFAR10 dataset into desired batched images.
 '''
 from __future__ import print_function
 
-# from PIL import Image
 import os
-# import sys
+import sys
 import random
 import numpy as np
 import cPickle
 import glob
-# from collections import namedtuple
-# from scipy.misc import imsave
-# from scipy.misc import imread
-# from scipy.misc import toimage
-
 
 class CIFAR10():
-    '''CIFAR10 class, includes all necessary methods'''
+    '''CIFAR10 class, includes all necessary methods''' 
     def __init__(self, params, random_seed=1125):
         '''Input: params includes data_path, batch_size, mode.'''
         '''Return: images [batch_size, height, width, 3],
@@ -139,15 +133,18 @@ class CIFAR10():
             adjusted_stddev = max(stddev, 1.0/sqrt(image.NumElements()))
         '''
         ones = np.ones((32,32,3))
+        num_elements = 32*32*3
         val_mean = np.mean(self._val_image_set, axis=(1,2,3))
         val_std = np.std(self._val_image_set, axis=(1,2,3))
+        adj_val_std = np.maximum(val_std, 1.0/np.sqrt(num_elements))
         self._val_image_set = self._val_image_set - np.einsum('i,jkl->ijkl', val_mean, ones)
-        self._val_image_set = self._val_image_set / np.einsum('i,jkl->ijkl', val_std, ones)
+        self._val_image_set = self._val_image_set / np.einsum('i,jkl->ijkl', adj_val_std, ones)
 
         train_mean = np.mean(self._train_image_set, axis=(1,2,3))
         train_std = np.std(self._train_image_set, axis=(1,2,3))
+        adj_train_std = np.maximum(train_std, 1.0/np.sqrt(num_elements))
         self._train_image_set -= np.einsum('i,jkl->ijkl', train_mean, ones)
-        self._train_image_set /= np.einsum('i,jkl->ijkl', train_std, ones)
+        self._train_image_set /= np.einsum('i,jkl->ijkl', adj_train_std, ones)
         return
 
 

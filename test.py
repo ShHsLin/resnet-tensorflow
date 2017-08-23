@@ -1,56 +1,76 @@
 import numpy as np
 import tensorflow as tf
-
 from resnet import ResNet
 import os
+import read_data
+params={}
+params['data_path']='../CIFAR10/cifar-10-batches-py'
+params['batch_size']=64
+params['mode']=True
 
-# Get CIFAR10 DATA
-from data_utils import get_CIFAR10_data
-data = get_CIFAR10_data()
-for k, v in data.iteritems():
-    if 'X' in k:
-        data[k] = np.einsum('ijkl->iklj', v)/128.
-
-    print '%s: ' % k, v.shape
-
-
-with tf.Session() as sess:
-    image_size = 32
-    images = tf.placeholder(tf.float32, [None, 32, 32, 3])
-    true_out = tf.placeholder(tf.float32, [None, 10])
-    r = ResNet(input_placeholder=images, num_classes=10, is_training=False)
-    print('ResNet graph build, with # variables: %d' % r.get_var_count())
-    model_var = tf.global_variables()
-    print('num var in model : %d' % len(model_var))
-
-    # Define Cost, Trainer
-    with tf.variable_scope('Loss'):
-        xent = tf.nn.softmax_cross_entropy_with_logits(logits=r.logits,
-                                                       labels=true_out)
-        cost = tf.reduce_mean(xent, name='xent')       
-        #cost += r.weight_decay()
-        tf.summary.scalar('cross_entropy', cost)
-        correct_prediction = tf.equal(tf.argmax(r.logits,1),
-                                      tf.argmax(true_out,1))
-        accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
-        tf.summary.scalar('accuracy', accuracy)
+CIFAR10 = read_data.CIFAR10(params)
+data={}
+data['X_train']= CIFAR10._train_image_set
+data['y_train']= CIFAR10._train_label_set
+data['X_val']= CIFAR10._val_image_set
+data['y_val']= CIFAR10._val_label_set
 
 
-    total_var = tf.global_variables()
-    print('total num var in model : %d' % len(total_var))
+config = tf.ConfigProto(allow_soft_placement=True) # , log_device_placement=True)
+#config.gpu_options.per_process_gpu_memory_fraction = 0.90
+config.gpu_options.allow_growth = True
 
-    saver = tf.train.Saver(model_var)
-    ckpt = tf.train.get_checkpoint_state('Model/old')
-    #ckpt = tf.train.get_checkpoint_state(os.path.dirname('/ResNet/Model'))
-    if ckpt and ckpt.model_checkpoint_path:
-        saver.restore(sess,ckpt.model_checkpoint_path)
+with tf.device('/gpu:0'):
+    with tf.Session(config=config) as sess:
+        ## Set up input image and image augmentation ##
+        image_size = 32
+        num_classes = 10
+        images = tf.placeholder(tf.float32, [None, image_size, image_size, 3])
+        true_out = tf.placeholder(tf.int64, [None])
 
-    uninit_var = sess.run(tf.report_uninitialized_variables(tf.global_variables()))
-#    import pdb; pdb.set_trace()
-    print('un initialized var in model : %d' % len(uninit_var))
-#    sess.run(tf.initialize_variables(uninit_var))
-    x_batch = np.array(data['X_val'])
-    y_batch = tf.one_hot(data['y_val'], 10).eval(session=sess)
-    print('accuracy : ',sess.run(accuracy,feed_dict={images: x_batch, true_out:
-                                                     y_batch}))
+        ## Build network ##
+        r = ResNet(input_rgb=images,
+                   num_classes=num_classes, is_training=False)
+        print('ResNet graph build, with # variables: %d' % r.get_var_count())
+
+        ## Define Cost, Summary ##
+        with tf.variable_scope('CIFAR10'):
+            xent = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=r.logits,
+                                                                  labels=true_out)
+            cost = tf.reduce_mean(xent, name='xent')
+            cost += r.weight_decay(0.0001)
+            correct_prediction = tf.equal(tf.argmax(r.logits,1),
+                                          true_out)
+            accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
+
+        ## Define Trainer ##
+
+        ## Start Session, Initialize variables, Restore Network
+        sess.run(tf.global_variables_initializer())
+        saver = tf.train.Saver(r.model_var_list,max_to_keep=2)
+        ckpt = tf.train.get_checkpoint_state('Model')
+        if ckpt and ckpt.model_checkpoint_path:
+            saver.restore(sess, ckpt.model_checkpoint_path)
+            print("Restore from last check point")
+        else:
+            print("No checkpoint found")
+
+
+        ## Start Testing ##
+        batch_size = 500
+        num_train = data['X_train'].shape[0]
+        num_val   = data['X_val'].shape[0]
+
+        sum_accuracy=0.
+        print(data['X_val'].shape, data['y_val'].shape)
+        print(data['y_val'][:10])
+        for i in range(10):
+            x_val = data['X_val'][batch_size*i : batch_size * (i+1)]
+            y_val = data['y_val'][batch_size*i : batch_size * (i+1)]
+            acc = sess.run(accuracy, feed_dict={images: x_val, true_out: y_val,
+                                                r.bn_is_training: r.is_training})
+            print("%d times accuracy is %f " %(i ,acc))
+            sum_accuracy += acc
+
+        print("avg val accuracy is %f" %(sum_accuracy/10.))
 
