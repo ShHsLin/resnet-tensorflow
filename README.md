@@ -1,10 +1,10 @@
 # ResNet Tensorflow on CIFAR10
 
-This is an implementation of ResNet v1 in Tensorflow.
-Here, the ResNet v1 refer to the network in [Deep Residual Learning for Image Recognition](https://arxiv.org/abs/1512.03385),
-where different architectures such as ResNet v2  [Identity Mappings in Deep Residual
-Networks](https://arxiv.org/pdf/1603.05027.pdf), wide ResNet 
-[Wider or Deeper: Revisiting the ResNet Model for Visual Recognition](https://arxiv.org/abs/1611.10080) is left as future work.
+This repository reproduces the result from the paper [Deep Residual Learning 
+for Image Recognition](https://arxiv.org/abs/1512.03385) on CIFAR10 in
+Tensorflow.
+Usually, the network in this paper is refered as ResNetv1, where different 
+architectures such as ResNet v2,  wide ResNet are left as future work.
 
 Note all papers, the network used for ImageNet and CIFAR10 are different.
 Basically, the network used for CIFAR10 has less number of channels. If one
@@ -13,11 +13,18 @@ reach the expected value as in the paper due to overfitting.
 
 ![](Figures/cifar10.png) 
 
+### Requirements
+Tensorflow
 
-https://github.com/KaimingHe/deep-residual-networks#disclaimer-and-known-issues
-ResNet50 Visualization [here](http://ethereon.github.io/netscope/#/gist/db945b393d40bfa26006)
-Wide Residual Network  [here](https://arxiv.org/pdf/1605.07146.pdf)
+### Results
+Accuracy: 91.8%
 
+### Links
+ResNetv1 50layers Visualization [here](http://ethereon.github.io/netscope/#/gist/db945b393d40bfa26006)     
+ResNetv2 [Identity Mappings in Deep Residual Networks](https://arxiv.org/pdf/1603.05027.pdf)    
+Wide Residual Network  [here](https://arxiv.org/pdf/1605.07146.pdf)       
+[Wider or Deeper: Revisiting the ResNet Model for Visual
+Recognition](https://arxiv.org/abs/1611.10080)    
 
 
 ### To do list
