@@ -1,8 +1,8 @@
 import numpy as np
 import tensorflow as tf
-from resnet import ResNet
+from network.resnet import ResNet
 import os
-import read_data
+import utils.read_data as read_data
 params={}
 params['data_path']='../CIFAR10/cifar-10-batches-py'
 params['batch_size']=64
@@ -48,7 +48,7 @@ with tf.device('/gpu:0'):
         ## Start Session, Initialize variables, Restore Network
         sess.run(tf.global_variables_initializer())
         saver = tf.train.Saver(r.model_var_list,max_to_keep=2)
-        ckpt = tf.train.get_checkpoint_state('Model')
+        ckpt = tf.train.get_checkpoint_state('Model/CIFAR10')
         if ckpt and ckpt.model_checkpoint_path:
             saver.restore(sess, ckpt.model_checkpoint_path)
             print("Restore from last check point")

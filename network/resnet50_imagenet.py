@@ -4,7 +4,7 @@ from tensorflow.python.training import moving_averages
 from functools import reduce
 
 class ResNet:
-    def __init__(self, npy_path=None, dropout=0.5, is_training=True,
+    def __init__(self, npy_path=None, is_training=True, dropout=0.5,
                  input_rgb=None, num_classes=1000):
         if npy_path is not None:
             self.data_dict = np.load(npy_path, encoding='latin1').item()
@@ -47,33 +47,39 @@ class ResNet:
         x = rgb
         #x = tf.map_fn(lambda img: tf.image.random_flip_left_right(img), x)
         with tf.variable_scope('unit_1', reuse=None):
-            x = self.conv_layer(x, 3, 3, 16, "conv1", stride_size=1)
+            x = self.conv_layer(x, 7, 3, 64, "conv1", stride_size=2)
             x = self.batch_norm(x, phase=self.bn_is_training, scope='bn1')
             x = tf.nn.relu(x)
-            # x = self.max_pool(x, 'pool1', kernel_size=3)
+            x = self.max_pool(x, 'pool1', kernel_size=3)
 
         name = 'unit_2_1'
-        x = self.bottleneck_residual(x, 16, 64, name=name, stride_size=1)
-        for idx in range(2, 7):
+        x = self.bottleneck_residual(x, 64, 256, name=name, stride_size=1)
+        for idx in range(2, 4):
             name = 'unit_2_%d' % idx
-            x = self.bottleneck_residual(x, 64, 64, name=name)
+            x = self.bottleneck_residual(x, 256, 256, name=name)
 
         name = 'unit_3_1'
-        x = self.bottleneck_residual(x, 64, 128, name=name)
-        for idx in range(2, 7):
+        x = self.bottleneck_residual(x, 256, 512, name=name)
+        for idx in range(2, 5):
             name = 'unit_3_%d' % idx
-            x = self.bottleneck_residual(x, 128, 128, name=name)
+            x = self.bottleneck_residual(x, 512, 512, name=name)
 
         name = 'unit_4_1'
-        x = self.bottleneck_residual(x, 128, 256, name=name)
+        x = self.bottleneck_residual(x, 512, 1024, name=name)
         for idx in range(2, 7):
             name = 'unit_4_%d' % idx
-            x = self.bottleneck_residual(x, 256, 256, name=name)
+            x = self.bottleneck_residual(x, 1024, 1024, name=name)
+
+        name = 'unit_5_1'
+        x = self.bottleneck_residual(x, 1024, 2048, name=name)
+        for idx in range(2, 4):
+            name = 'unit_5_%d' % idx
+            x = self.bottleneck_residual(x, 2048, 2048, name=name)
 
         self.conv_output = tf.reduce_mean(x, [1, 2])  # global_avg_pool
         self.conv_var_list = tf.global_variables()
 
-        self.logits = self.fc_layer(self.conv_output, 256, self.num_classes, "fc")
+        self.logits = self.fc_layer(self.conv_output, 2048, self.num_classes, "fc")
         self.predict = tf.nn.softmax(self.logits, name="predict")
 
 

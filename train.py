@@ -1,7 +1,8 @@
 import numpy as np
 import tensorflow as tf
-from resnet import ResNet
+from network.resnet import ResNet
 import os
+import utils.read_data as read_data
 
 def tf_image_augmentation(x_batch, pad_size=4, batchsize=128):
     images_pad = tf.image.resize_image_with_crop_or_pad(x_batch, 32 + 2 * pad_size,
@@ -14,7 +15,6 @@ def tf_image_augmentation(x_batch, pad_size=4, batchsize=128):
 def tf_identity(x_batch):
     return tf.identity(x_batch)
 
-import read_data
 params={}
 params['data_path']='../CIFAR10/cifar-10-batches-py'
 params['batch_size']=64
@@ -66,8 +66,8 @@ with tf.device('/gpu:0'):
             tf.summary.image('input image', images_aug[:5,:,:,:])
 
         merged = tf.summary.merge_all()
-        train_writer = tf.summary.FileWriter('Model/train_log/train',sess.graph)
-        val_writer = tf.summary.FileWriter('Model/train_log/val')
+        train_writer = tf.summary.FileWriter('Model/CIFAR10/train_log/train',sess.graph)
+        val_writer = tf.summary.FileWriter('Model/CIFAR10/train_log/val')
 
         ## Define Trainer ##
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
@@ -81,7 +81,7 @@ with tf.device('/gpu:0'):
         ## Start Session, Initialize variables, Restore Network
         sess.run(tf.global_variables_initializer())
         saver = tf.train.Saver(r.model_var_list,max_to_keep=2)
-        ckpt = tf.train.get_checkpoint_state('Model')
+        ckpt = tf.train.get_checkpoint_state('Model/CIFAR10')
         if ckpt and ckpt.model_checkpoint_path:
             saver.restore(sess, ckpt.model_checkpoint_path)
             print("Restore from last check point")
@@ -128,7 +128,7 @@ with tf.device('/gpu:0'):
                     val_writer.flush()
                     ## Save Model
                     if step_idx % 1000 == 0:
-                        saver.save(sess, 'Model/ResNet_CIFAR10')
+                        saver.save(sess, 'Model/CIFAR10/ResNet_CIFAR10')
 
         # test classification again, should have a higher probability about tiger
         # prob = sess.run(vgg.prob, feed_dict={images: batch1, train_mode: False})

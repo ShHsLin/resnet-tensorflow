@@ -13,6 +13,7 @@ class ResNet:
 
         self.var_dict = {}
         self.is_training = is_training
+        self.bn_is_training = tf.placeholder(tf.bool)
         self.dropout = dropout
         self.num_classes = num_classes
         self.bn_train_ops = []
@@ -46,39 +47,33 @@ class ResNet:
         x = rgb
         #x = tf.map_fn(lambda img: tf.image.random_flip_left_right(img), x)
         with tf.variable_scope('unit_1', reuse=None):
-            x = self.conv_layer(x, 7, 3, 64, "conv1", stride_size=2)
-            x = self.batch_norm(x, phase=self.is_training, scope='bn1')
+            x = self.conv_layer(x, 3, 3, 16, "conv1", stride_size=1)
+            x = self.batch_norm(x, phase=self.bn_is_training, scope='bn1')
             x = tf.nn.relu(x)
-            x = self.max_pool(x, 'pool1', kernel_size=3)
+            # x = self.max_pool(x, 'pool1', kernel_size=3)
 
         name = 'unit_2_1'
-        x = self.bottleneck_residual(x, 64, 256, name=name, stride_size=1)
-        for idx in range(2, 4):
+        x = self.bottleneck_residual(x, 16, 64, name=name, stride_size=1)
+        for idx in range(2, 7):
             name = 'unit_2_%d' % idx
-            x = self.bottleneck_residual(x, 256, 256, name=name)
+            x = self.bottleneck_residual(x, 64, 64, name=name)
 
         name = 'unit_3_1'
-        x = self.bottleneck_residual(x, 256, 512, name=name)
-        for idx in range(2, 5):
+        x = self.bottleneck_residual(x, 64, 128, name=name)
+        for idx in range(2, 7):
             name = 'unit_3_%d' % idx
-            x = self.bottleneck_residual(x, 512, 512, name=name)
+            x = self.bottleneck_residual(x, 128, 128, name=name)
 
         name = 'unit_4_1'
-        x = self.bottleneck_residual(x, 512, 1024, name=name)
+        x = self.bottleneck_residual(x, 128, 256, name=name)
         for idx in range(2, 7):
             name = 'unit_4_%d' % idx
-            x = self.bottleneck_residual(x, 1024, 1024, name=name)
-
-        name = 'unit_5_1'
-        x = self.bottleneck_residual(x, 1024, 2048, name=name)
-        for idx in range(2, 4):
-            name = 'unit_5_%d' % idx
-            x = self.bottleneck_residual(x, 2048, 2048, name=name)
+            x = self.bottleneck_residual(x, 256, 256, name=name)
 
         self.conv_output = tf.reduce_mean(x, [1, 2])  # global_avg_pool
         self.conv_var_list = tf.global_variables()
 
-        self.logits = self.fc_layer(self.conv_output, 2048, self.num_classes, "fc")
+        self.logits = self.fc_layer(self.conv_output, 256, self.num_classes, "fc")
         self.predict = tf.nn.softmax(self.logits, name="predict")
 
 
@@ -95,18 +90,18 @@ class ResNet:
                 shortcut = self.conv_layer(shortcut, 1, in_channel,
                                            out_channel, "project",
                                            stride_size=stride_size)
-                shortcut = self.batch_norm(shortcut, phase=self.is_training,
+                shortcut = self.batch_norm(shortcut, phase=self.bn_is_training,
                                            scope='bn0')
                 x = self.conv_layer(x, 1, in_channel, out_channel/4, "conv1",
                                     stride_size=stride_size)
 
-            x = self.batch_norm(x, phase=self.is_training, scope='bn1')
+            x = self.batch_norm(x, phase=self.bn_is_training, scope='bn1')
             x = tf.nn.relu(x)
             x = self.conv_layer(x, 3, out_channel/4, out_channel/4, "conv2")
-            x = self.batch_norm(x, phase=self.is_training, scope='bn2')
+            x = self.batch_norm(x, phase=self.bn_is_training, scope='bn2')
             x = tf.nn.relu(x)
             x = self.conv_layer(x, 1, out_channel/4, out_channel, "conv3")
-            x = self.batch_norm(x, phase=self.is_training, scope='bn3')
+            x = self.batch_norm(x, phase=self.bn_is_training, scope='bn3')
             x += shortcut
             x = tf.nn.relu(x)
 
