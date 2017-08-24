@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-from network.resnet import ResNet
+from network.resnet_v1 import ResNet
 import os
 import utils.read_data as read_data
 params={}

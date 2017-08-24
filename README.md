@@ -30,6 +30,7 @@ Recognition](https://arxiv.org/abs/1611.10080)
 
 ### To do list
 
+- [ ] Tensorized ResNet
 - [ ] Remove unnecessary VGG related code
 - [ ] Separate numpy save to utils
 - [ ] Rename slim model so one can restore and fine tune.

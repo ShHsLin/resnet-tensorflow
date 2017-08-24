@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-from network.resnet import ResNet
+from network.resnet_v1 import ResNet
 import os
 import utils.read_data as read_data
 
@@ -72,7 +72,7 @@ with tf.device('/gpu:0'):
         ## Define Trainer ##
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         with tf.control_dependencies(update_ops):
-            train_step = tf.train.MomentumOptimizer(learning_rate=0.0001,
+            train_step = tf.train.MomentumOptimizer(learning_rate=0.01,
                                                     momentum=0.9).minimize(cost)
 #        train_ops = [train_step] + r.bn_train_ops
 #        train_step = tf.group(*train_ops)
@@ -80,13 +80,26 @@ with tf.device('/gpu:0'):
 
         ## Start Session, Initialize variables, Restore Network
         sess.run(tf.global_variables_initializer())
-        saver = tf.train.Saver(r.model_var_list,max_to_keep=2)
-        ckpt = tf.train.get_checkpoint_state('Model/CIFAR10')
-        if ckpt and ckpt.model_checkpoint_path:
-            saver.restore(sess, ckpt.model_checkpoint_path)
-            print("Restore from last check point")
+        ## Load from pretrain Model
+        load_pretrain = True
+        if load_pretrain == True:
+            saver = tf.train.Saver(r.conv_var_list)
+            ckpt = tf.train.get_checkpoint_state('Model')
+            if ckpt and ckpt.model_checkpoint_path:
+                saver.restore(sess, ckpt.model_checkpoint_path)
+                print("Load pretrain model from check point")
+            else:
+                print("No pretrain model checkpoint found")
+            saver = tf.train.Saver(r.model_var_list,max_to_keep=2)
+
         else:
-            print("No checkpoint found")
+            saver = tf.train.Saver(r.model_var_list,max_to_keep=2)
+            ckpt = tf.train.get_checkpoint_state('Model/CIFAR10')
+            if ckpt and ckpt.model_checkpoint_path:
+                saver.restore(sess, ckpt.model_checkpoint_path)
+                print("Restore from last check point")
+            else:
+                print("No checkpoint found")
 
 
         ## Start Training ##
@@ -95,7 +108,7 @@ with tf.device('/gpu:0'):
         # y_val = tf.one_hot(data['y_val'], 10).eval(session=sess)
         num_train = data['X_train'].shape[0]
         num_val   = data['X_val'].shape[0]
-        for step_idx in range(62000,75000):
+        for step_idx in range(0,30000):
             batch_mask = np.random.choice(num_train, batch_size)
             x_batch = np.array(data['X_train'][batch_mask])
             # x_batch = image_pad_random_crop(x_batch)

@@ -1,8 +1,3 @@
-'''
-From https://gist.github.com/batzner/7c24802dd9c5e15870b4b56e22135c96
-'''
-
-
 import sys, getopt
 
 import tensorflow as tf
@@ -25,7 +20,8 @@ def rename(checkpoint_dir, replace_from, replace_to, add_prefix, dry_run):
             if add_prefix:
                 new_name = add_prefix + new_name
 
-            if new_name == var_name:
+            if var_name == new_name:
+                var = tf.Variable(var, name=new_name)
                 continue
 
             if dry_run:
