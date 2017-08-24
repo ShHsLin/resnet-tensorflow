@@ -17,7 +17,9 @@ class ResNet:
         self.dropout = dropout
         self.num_classes = num_classes
         self.bn_train_ops = []
-        self.build(input_rgb)
+        with tf.variable_scope('resnet_v1_50', reuse=None):
+            self.build(input_rgb)
+
         self.model_var_list = tf.global_variables()
         # self.conv_var_list : contain all variables before fully connected
         #                      layer. Could be save/read for transfer learning
@@ -46,40 +48,45 @@ class ResNet:
 
         x = rgb
         #x = tf.map_fn(lambda img: tf.image.random_flip_left_right(img), x)
-        with tf.variable_scope('unit_1', reuse=None):
-            x = self.conv_layer(x, 7, 3, 64, "conv1", stride_size=2)
+        with tf.variable_scope('block0', reuse=None):
+            x = self.conv_layer(x, 7, 3, 64, "conv1", stride_size=2, biases=False)
             x = self.batch_norm(x, phase=self.bn_is_training, scope='bn1')
             x = tf.nn.relu(x)
             x = self.max_pool(x, 'pool1', kernel_size=3)
 
-        name = 'unit_2_1'
-        x = self.bottleneck_residual(x, 64, 256, name=name, stride_size=1)
-        for idx in range(2, 4):
-            name = 'unit_2_%d' % idx
-            x = self.bottleneck_residual(x, 256, 256, name=name)
+        with tf.variable_scope('block1', reuse=None):
+            name = 'unit_1'
+            x = self.bottleneck_residual(x, 64, 256, name=name, stride_size=1)
+            for idx in range(2, 4):
+                name = 'unit_%d' % idx
+                x = self.bottleneck_residual(x, 256, 256, name=name)
 
-        name = 'unit_3_1'
-        x = self.bottleneck_residual(x, 256, 512, name=name)
-        for idx in range(2, 5):
-            name = 'unit_3_%d' % idx
-            x = self.bottleneck_residual(x, 512, 512, name=name)
+        with tf.variable_scope('block2', reuse=None):
+            name = 'unit_1'
+            x = self.bottleneck_residual(x, 256, 512, name=name)
+            for idx in range(2, 5):
+                name = 'unit_%d' % idx
+                x = self.bottleneck_residual(x, 512, 512, name=name)
 
-        name = 'unit_4_1'
-        x = self.bottleneck_residual(x, 512, 1024, name=name)
-        for idx in range(2, 7):
-            name = 'unit_4_%d' % idx
-            x = self.bottleneck_residual(x, 1024, 1024, name=name)
+        with tf.variable_scope('block3', reuse=None):
+            name = 'unit_1'
+            x = self.bottleneck_residual(x, 512, 1024, name=name)
+            for idx in range(2, 7):
+                name = 'unit_%d' % idx
+                x = self.bottleneck_residual(x, 1024, 1024, name=name)
 
-        name = 'unit_5_1'
-        x = self.bottleneck_residual(x, 1024, 2048, name=name)
-        for idx in range(2, 4):
-            name = 'unit_5_%d' % idx
-            x = self.bottleneck_residual(x, 2048, 2048, name=name)
+        with tf.variable_scope('block4', reuse=None):
+            name = 'unit_1'
+            x = self.bottleneck_residual(x, 1024, 2048, name=name)
+            for idx in range(2, 4):
+                name = 'unit_%d' % idx
+                x = self.bottleneck_residual(x, 2048, 2048, name=name)
 
         self.conv_output = tf.reduce_mean(x, [1, 2])  # global_avg_pool
         self.conv_var_list = tf.global_variables()
 
-        self.logits = self.fc_layer(self.conv_output, 2048, self.num_classes, "fc")
+        self.logits = self.fc_layer(self.conv_output, 2048, self.num_classes,
+                                    "logits")
         self.predict = tf.nn.softmax(self.logits, name="predict")
 
 
@@ -94,10 +101,10 @@ class ResNet:
             else:
                 shortcut = x
                 shortcut = self.conv_layer(shortcut, 1, in_channel,
-                                           out_channel, "project",
+                                           out_channel, "shortcut",
                                            stride_size=stride_size)
                 shortcut = self.batch_norm(shortcut, phase=self.bn_is_training,
-                                           scope='bn0')
+                                           scope='shortcut/bn')
                 x = self.conv_layer(x, 1, in_channel, out_channel/4, "conv1",
                                     stride_size=stride_size)
 
@@ -126,16 +133,20 @@ class ResNet:
         return tf.contrib.layers.batch_norm(bottom, center=True, scale=True,
                                             is_training=phase, scope=scope,
                                             decay=0.995)
-    # https://stackoverflow.com/questions/40879967/how-to-use-batch-normalization-correctly-in-tensorflow
+# https://stackoverflow.com/questions/40879967/how-to-use-batch-normalization-correctly-in-tensorflow
 
     def conv_layer(self, bottom, filter_size, in_channels,
-                   out_channels, name, stride_size=1):
+                   out_channels, name, stride_size=1, biases=False):
         with tf.variable_scope(name, reuse=None):
-            filt, conv_biases = self.get_conv_var(filter_size, in_channels, out_channels)
+            filt, conv_biases = self.get_conv_var(filter_size, in_channels,
+                                                  out_channels, biases=False)
             conv = tf.nn.conv2d(bottom, filt, [1, stride_size, stride_size, 1], padding='SAME')
-            bias = tf.nn.bias_add(conv, conv_biases)
+            if biases == False:
+                return conv
+            else:
+                bias = tf.nn.bias_add(conv, conv_biases)
+                return bias
 
-        return bias
 
     def fc_layer(self, bottom, in_size, out_size, name):
         with tf.variable_scope(name, reuse=None):
@@ -145,14 +156,18 @@ class ResNet:
 
         return fc
 
-    def get_conv_var(self, filter_size, in_channels, out_channels, name=""):
+    def get_conv_var(self, filter_size, in_channels, out_channels, name="",
+                     biases=False):
         initial_value = tf.truncated_normal([filter_size, filter_size, in_channels, out_channels], 0.0, 0.001)
         filters = self.get_var(initial_value, name, 0, name + "weights")
 
-        initial_value = tf.truncated_normal([out_channels], .0, .001)
-        biases = self.get_var(initial_value, name, 1, name + "biases")
+        if biases == False:
+            return filters, None
+        else:
+            initial_value = tf.truncated_normal([out_channels], .0, .001)
+            biases = self.get_var(initial_value, name, 1, name + "biases")
+            return filters, biases
 
-        return filters, biases
 
     def get_fc_var(self, in_size, out_size, name=""):
         initial_value = tf.truncated_normal([in_size, out_size], 0.0, 0.001)

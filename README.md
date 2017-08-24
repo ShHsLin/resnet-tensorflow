@@ -1,9 +1,9 @@
 # ResNet Tensorflow on CIFAR10
 
-This repository reproduces the result from the paper [Deep Residual Learning 
+This repository provides implementation to reproduce the result from the paper [Deep Residual Learning 
 for Image Recognition](https://arxiv.org/abs/1512.03385) on CIFAR10 in
 Tensorflow.
-Usually, the network in this paper is refered as ResNetv1, where different 
+The network in this paper is refered as ResNet v1, where different 
 architectures such as ResNet v2,  wide ResNet are left as future work.
 
 Note all papers, the network used for ImageNet and CIFAR10 are different.
@@ -17,6 +17,7 @@ reach the expected value as in the paper due to overfitting.
 Tensorflow
 
 ### Results
+
 Accuracy: 91.8%
 
 ### Links
@@ -31,5 +32,6 @@ Recognition](https://arxiv.org/abs/1611.10080)
 
 - [ ] Remove unnecessary VGG related code
 - [ ] Separate numpy save to utils
+- [ ] Rename slim model so one can restore and fine tune.
 - [ ] ResNet version2 as in arXiv:1603.05027
 - [ ] 
