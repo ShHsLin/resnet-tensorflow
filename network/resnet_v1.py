@@ -47,7 +47,6 @@ class ResNet:
         # x = bgr
 
         x = rgb
-        #x = tf.map_fn(lambda img: tf.image.random_flip_left_right(img), x)
         with tf.variable_scope('block0', reuse=None):
             x = self.conv_layer(x, 7, 3, 64, "conv1", stride_size=2, biases=False)
             x = self.batch_norm(x, phase=self.bn_is_training, scope='bn1')

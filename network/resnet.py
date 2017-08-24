@@ -46,31 +46,36 @@ class ResNet:
         # assert bgr.get_shape().as_list()[1:] == [224, 224, 3]
         # x = bgr
 
+        num_units = [3,3,3]  # resnet29
+        num_channels = [16,32,64]
+
         x = rgb
-        #x = tf.map_fn(lambda img: tf.image.random_flip_left_right(img), x)
-        with tf.variable_scope('unit_1', reuse=None):
-            x = self.conv_layer(x, 3, 3, 16, "conv1", stride_size=1)
+        with tf.variable_scope('block0', reuse=None):
+            x = self.conv_layer(x, 3, 3, 64, "conv1", stride_size=1)
             x = self.batch_norm(x, phase=self.bn_is_training, scope='bn1')
             x = tf.nn.relu(x)
             # x = self.max_pool(x, 'pool1', kernel_size=3)
 
-        name = 'unit_2_1'
-        x = self.bottleneck_residual(x, 16, 64, name=name, stride_size=1)
-        for idx in range(2, 7):
-            name = 'unit_2_%d' % idx
-            x = self.bottleneck_residual(x, 64, 64, name=name)
+        with tf.variable_scope('block1', reuse=None):
+            name = 'unit_1'
+            x = self.bottleneck_residual(x, 64, 64, name=name, stride_size=1)
+            for idx in range(2, num_units[0]+1):
+                name = 'unit_%d' % idx
+                x = self.bottleneck_residual(x, 64, 64, name=name)
 
-        name = 'unit_3_1'
-        x = self.bottleneck_residual(x, 64, 128, name=name)
-        for idx in range(2, 7):
-            name = 'unit_3_%d' % idx
-            x = self.bottleneck_residual(x, 128, 128, name=name)
+        with tf.variable_scope('block2', reuse=None):
+            name = 'unit_1'
+            x = self.bottleneck_residual(x, 64, 128, name=name)
+            for idx in range(2, num_units[1]+1):
+                name = 'unit_%d' % idx
+                x = self.bottleneck_residual(x, 128, 128, name=name)
 
-        name = 'unit_4_1'
-        x = self.bottleneck_residual(x, 128, 256, name=name)
-        for idx in range(2, 7):
-            name = 'unit_4_%d' % idx
-            x = self.bottleneck_residual(x, 256, 256, name=name)
+        with tf.variable_scope('block3', reuse=None):
+            name = 'unit_1'
+            x = self.bottleneck_residual(x, 128, 256, name=name)
+            for idx in range(2, num_units[2]+1):
+                name = 'unit_%d' % idx
+                x = self.bottleneck_residual(x, 256, 256, name=name)
 
         self.conv_output = tf.reduce_mean(x, [1, 2])  # global_avg_pool
         self.conv_var_list = tf.global_variables()

@@ -26,7 +26,7 @@ ResNetv2 [Identity Mappings in Deep Residual Networks](https://arxiv.org/pdf/160
 Wide Residual Network  [here](https://arxiv.org/pdf/1605.07146.pdf)       
 [Wider or Deeper: Revisiting the ResNet Model for Visual
 Recognition](https://arxiv.org/abs/1611.10080)    
-
+ResNeXt [Aggregated Residual Transformations for Deep Neural Networks](https://arxiv.org/pdf/1611.05431.pdf)
 
 ### To do list
 
