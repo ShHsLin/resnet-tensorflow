@@ -81,7 +81,7 @@ class CIFAR10():
            By default, num_images=10000'''
 
         image_data = batch_dict['data']
-        label_data = batch_dict['labels']
+        label_data = np.array(batch_dict['labels'])
         num_images = np.shape(image_data)[0]
 
         images = np.reshape(image_data, (num_images,32,32,3), order='F')

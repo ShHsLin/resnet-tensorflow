@@ -1,20 +1,24 @@
 import numpy as np
 import tensorflow as tf
-from network.resnet_v1 import ResNet
+from network.resnet import ResNet
 import os
-import utils.read_data as read_data
+import utils.CIFAR10 as CIFAR10 
+#import utils.read_data as read_data
 params={}
 params['data_path']='../CIFAR10/cifar-10-batches-py'
 params['batch_size']=64
-params['mode']=True
+# params['mode']=True
 
-CIFAR10 = read_data.CIFAR10(params)
+# CIFAR10 = read_data.CIFAR10(params)
+# data={}
+# data['X_train']= CIFAR10._train_image_set
+# data['y_train']= CIFAR10._train_label_set
+# data['X_val']= CIFAR10._val_image_set
+# data['y_val']= CIFAR10._val_label_set
+CIFAR10 = CIFAR10.CIFAR10(params)
 data={}
-data['X_train']= CIFAR10._train_image_set
-data['y_train']= CIFAR10._train_label_set
-data['X_val']= CIFAR10._val_image_set
-data['y_val']= CIFAR10._val_label_set
-
+data['X_val']= CIFAR10._test_image_set
+data['y_val']= CIFAR10._test_label_set
 
 config = tf.ConfigProto(allow_soft_placement=True) # , log_device_placement=True)
 #config.gpu_options.per_process_gpu_memory_fraction = 0.90
@@ -58,13 +62,13 @@ with tf.device('/gpu:0'):
 
         ## Start Testing ##
         batch_size = 500
-        num_train = data['X_train'].shape[0]
-        num_val   = data['X_val'].shape[0]
+        # num_val   = data['X_val'].shape[0]
 
         sum_accuracy=0.
         print(data['X_val'].shape, data['y_val'].shape)
         print(data['y_val'][:10])
-        for i in range(10):
+        num_batch = 20
+        for i in range(num_batch):
             x_val = data['X_val'][batch_size*i : batch_size * (i+1)]
             y_val = data['y_val'][batch_size*i : batch_size * (i+1)]
             acc = sess.run(accuracy, feed_dict={images: x_val, true_out: y_val,
@@ -72,5 +76,5 @@ with tf.device('/gpu:0'):
             print("%d times accuracy is %f " %(i ,acc))
             sum_accuracy += acc
 
-        print("avg val accuracy is %f" %(sum_accuracy/10.))
+        print("avg val accuracy is %f" %(sum_accuracy/num_batch))
 
