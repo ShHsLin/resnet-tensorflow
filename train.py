@@ -1,10 +1,10 @@
 import numpy as np
 import tensorflow as tf
-from network.resnet import ResNet
+from network.resnet_v1 import resnet_v1_29_tt as ResNet
 import os
 import utils.CIFAR10 as CIFAR10
 
-def tf_image_augmentation(x_batch, pad_size=4, batch_size=128):
+def tf_image_augmentation(x_batch, pad_size=4, batch_size=64):
     images_pad = tf.image.resize_image_with_crop_or_pad(x_batch, 32 + 2 * pad_size,
                                                         32 + 2 * pad_size)
     images_pad_crop = tf.random_crop(images_pad, [batch_size, 32, 32, 3])
@@ -15,7 +15,7 @@ def tf_image_augmentation(x_batch, pad_size=4, batch_size=128):
 def tf_identity(x_batch):
     return tf.identity(x_batch)
 
-params = {'batch_size': 128,
+params = {'batch_size': 64,
           'data_path': '../CIFAR10/cifar-10-batches-py'}
 
 CIFAR10 = CIFAR10.CIFAR10(params)
@@ -57,7 +57,7 @@ with tf.device('/gpu:0'):
             xent = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=r.logits,
                                                                   labels=true_out)
             cost = tf.reduce_mean(xent, name='xent')
-            cost += r.weight_decay(0.0003) #Resnet29 should be 0.0005
+            cost += r.weight_decay(0.000) #Resnet29 should be 0.0005
             correct_prediction = tf.equal(tf.argmax(r.logits,1),
                                           true_out)
             accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
@@ -73,7 +73,7 @@ with tf.device('/gpu:0'):
         ## Define Trainer ##
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         with tf.control_dependencies(update_ops):
-            train_step = tf.train.MomentumOptimizer(learning_rate=0.001,
+            train_step = tf.train.MomentumOptimizer(learning_rate=0.1,
                                                     momentum=0.9).minimize(cost)
 #        train_ops = [train_step] + r.bn_train_ops
 #        train_step = tf.group(*train_ops)
@@ -104,10 +104,7 @@ with tf.device('/gpu:0'):
 
 
         ## Start Training ##
-        # batch_size = 128
-        # num_train = data['X_train'].shape[0]
-        # num_val   = data['X_val'].shape[0]
-        for step_idx in range(60000,80000):
+        for step_idx in range(0000+1,100000+1):
             # batch_mask = np.random.choice(num_train, batch_size)
             # x_batch = np.array(data['X_train'][batch_mask])
             # y_batch = data['y_train'][batch_mask]

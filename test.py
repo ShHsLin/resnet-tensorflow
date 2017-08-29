@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-from network.resnet import ResNet
+from network.resnet_v1 import resnet_v1_29 as ResNet
 import os
 import utils.CIFAR10 as CIFAR10 
 #import utils.read_data as read_data

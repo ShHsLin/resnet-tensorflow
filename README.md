@@ -18,7 +18,18 @@ Tensorflow
 
 ### Results
 
-Accuracy: 91.8%
+Train:45000, Val:5000   
+ResNet56 (2+54) bottleneck channels = [16-32-64], reg 0.0001   
+Accuracy: 91.8%  
+
+Train:50000, Val:10000   
+ResNet29 (2+27) bottleneck channels = [16-32-64], reg 0.0001
+Accuracy: 89% 
+ResNet29 (2+27) bottleneck channels = [16-32-64], reg 0.0003   
+Accuracy: 91.04%  
+ResNet29 (2+27) bottleneck channels = [64-128-256], reg 0.0005   
+Accuracy: 94.0%
+
 
 ### Links
 ResNetv1 50layers Visualization [here](http://ethereon.github.io/netscope/#/gist/db945b393d40bfa26006)     

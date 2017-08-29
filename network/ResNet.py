@@ -1,10 +1,12 @@
 import tensorflow as tf
 import numpy as np
-import sys
-sys.path.append('../../TensorNet-TF/')
-import tensornet
 from tensorflow.python.training import moving_averages
 from functools import reduce
+import sys
+sys.path.append('/usr/prakt/s032/TensorNet-TF/')
+import tensornet
+
+
 
 class ResNet:
     def __init__(self, npy_path=None, is_training=True, dropout=0.5,
@@ -20,77 +22,14 @@ class ResNet:
         self.dropout = dropout
         self.num_classes = num_classes
         self.bn_train_ops = []
-        with tf.variable_scope('resnet_v1_50', reuse=None):
-            self.build(input_rgb)
-
-        self.model_var_list = tf.global_variables()
-        # self.conv_var_list : contain all variables before fully connected
-        #                      layer. Could be save/read for transfer learning
-
-    def build(self, rgb):
-        """
-        load variable from npy to build the VGG
-
-        :param rgb: rgb image [batch, height, width, 3] values scaled [0, 1]
-        :param train_mode: a bool tensor, usually a placeholder: if True, dropout will be turned on
-        """
-
-        # Convert RGB to BGR
-        # rgb_scaled = rgb * 255.0
-        # red, green, blue = tf.split(axis=3, num_or_size_splits=3, value=rgb_scaled)
-        # assert red.get_shape().as_list()[1:] == [224, 224, 1]
-        # assert green.get_shape().as_list()[1:] == [224, 224, 1]
-        # assert blue.get_shape().as_list()[1:] == [224, 224, 1]
-        # bgr = tf.concat(axis=3, values=[
-        #     blue - VGG_MEAN[0],
-        #     green - VGG_MEAN[1],
-        #     red - VGG_MEAN[2],
-        # ])
-        # assert bgr.get_shape().as_list()[1:] == [224, 224, 3]
-        # x = bgr
-
-        x = rgb
-        #x = tf.map_fn(lambda img: tf.image.random_flip_left_right(img), x)
-        with tf.variable_scope('block0', reuse=None):
-            x = self.conv_layer(x, 7, 3, 64, "conv1", stride_size=2, biases=False)
-            x = self.batch_norm(x, phase=self.bn_is_training, scope='bn1')
-            x = tf.nn.relu(x)
-            x = self.max_pool(x, 'pool1', kernel_size=3)
-
-        with tf.variable_scope('block1', reuse=None):
-            name = 'unit_1'
-            x = self.bottleneck_residual(x, 64, 256, name=name, stride_size=1)
-            for idx in range(2, 4):
-                name = 'unit_%d' % idx
-                x = self.bottleneck_residual(x, 256, 256, name=name)
-
-        with tf.variable_scope('block2', reuse=None):
-            name = 'unit_1'
-            x = self.bottleneck_residual(x, 256, 512, name=name)
-            for idx in range(2, 5):
-                name = 'unit_%d' % idx
-                x = self.bottleneck_residual(x, 512, 512, name=name)
-
-        with tf.variable_scope('block3', reuse=None):
-            name = 'unit_1'
-            x = self.bottleneck_residual(x, 512, 1024, name=name)
-            for idx in range(2, 7):
-                name = 'unit_%d' % idx
-                x = self.bottleneck_residual(x, 1024, 1024, name=name)
-
-        with tf.variable_scope('block4', reuse=None):
-            name = 'unit_1'
-            x = self.bottleneck_residual(x, 1024, 2048, name=name)
-            for idx in range(2, 4):
-                name = 'unit_%d' % idx
-                x = self.bottleneck_residual(x, 2048, 2048, name=name)
-
-        self.conv_output = tf.reduce_mean(x, [1, 2])  # global_avg_pool
-        self.conv_var_list = tf.global_variables()
-
-        self.logits = self.fc_layer(self.conv_output, 2048, self.num_classes,
-                                    "logits")
-        self.predict = tf.nn.softmax(self.logits, name="predict")
+##        with tf.variable_scope('resnet_v1_50', reuse=None):
+##            self.build(input_rgb)
+##
+##        self.model_var_list = tf.global_variables()
+        '''
+        self.conv_var_list : contain all variables before fully connected
+                              layer. Could be save/read for transfer learning
+        '''
 
 
     def bottleneck_residual(self, x, in_channel, out_channel, name,
@@ -123,6 +62,39 @@ class ResNet:
 
         return x
 
+
+    def bottleneck_residual_tt(self, x, in_channel, out_channel, name,
+                               stride_size=2, bond_dim=16):
+        with tf.variable_scope(name, reuse=None):
+            # Identity shortcut
+            if in_channel == out_channel:
+                shortcut = x
+                x = self.conv_layer_tt(x, 1, in_channel, out_channel/4, "conv1")
+                # conv projection shortcut
+            else:
+                shortcut = x
+                shortcut = self.conv_layer_tt(shortcut, 1, in_channel,
+                                              out_channel, "shortcut",
+                                              stride_size=stride_size)
+                shortcut = self.batch_norm(shortcut, phase=self.bn_is_training,
+                                           scope='shortcut/bn')
+                x = self.conv_layer_tt(x, 1, in_channel, out_channel/4, "conv1",
+                                       stride_size=stride_size)
+
+            x = self.batch_norm(x, phase=self.bn_is_training, scope='bn1')
+            x = tf.nn.relu(x)
+            x = self.conv_layer_tt(x, 3, out_channel/4, out_channel/4, "conv2")
+            x = self.batch_norm(x, phase=self.bn_is_training, scope='bn2')
+            x = tf.nn.relu(x)
+            x = self.conv_layer_tt(x, 1, out_channel/4, out_channel, "conv3")
+            x = self.batch_norm(x, phase=self.bn_is_training, scope='bn3')
+            x += shortcut
+            x = tf.nn.relu(x)
+
+        return x
+
+
+
     def avg_pool(self, bottom, name, kernel_size):
         return tf.nn.avg_pool(bottom, ksize=[1, kernel_size, kernel_size, 1],
                               strides=[1, 2, 2, 1], padding='SAME', name=name)
@@ -150,6 +122,62 @@ class ResNet:
                 bias = tf.nn.bias_add(conv, conv_biases)
                 return bias
 
+    def get_tt(self, in_channels, out_channels, bond_dim=30):
+        q_in_chan = np.ones(int(np.log2(in_channels))) * 2
+        q_out_chan = np.ones(int(np.log2(out_channels))) * 2
+        if in_channels > out_channels:
+            ratio = int(in_channels/out_channels)
+            extra_d = int(np.log2(ratio))
+            q_out_chan = np.append(q_out_chan, np.ones(extra_d))
+        elif out_channels > in_channels:
+            ratio = int(out_channels/in_channels)
+            extra_d = int(np.log2(ratio))
+            q_in_chan = np.append(q_in_chan, np.ones(extra_d))
+
+        tt_rank = np.ones(len(q_in_chan)+1)
+        x = 1
+        for i in range(len(q_in_chan)+1):
+            if x < bond_dim:
+                tt_rank[-i-1] = x
+                x = x * q_in_chan[-i-1] * q_out_chan[-i-1]
+            else:
+                tt_rank[-i-1]=bond_dim
+
+        print(tt_rank)
+        return (np.array(q_in_chan, dtype=np.int32),
+                np.array(q_out_chan, dtype=np.int32),
+                np.array(tt_rank, dtype=np.int32))
+
+
+    def conv_layer_tt(self, bottom, filter_size, in_channels, out_channels,
+                      name, stride_size=1, biases=False):
+        quantized_in_channels, quantized_out_channels, tt_rank = \
+                self.get_tt(in_channels, out_channels)
+        if biases == False:
+            biases_init = None
+        else:
+            biases_init = tf.zeros_initializer
+
+        return tensornet.layers.tt_conv_full(bottom,
+                                             [filter_size, filter_size],
+                                             quantized_in_channels,
+                                             quantized_out_channels,
+                                             tt_rank,
+                                             strides=[stride_size,
+                                                      stride_size],
+                                             padding='SAME',
+                                             biases_initializer=biases_init,
+                                             scope=name)
+
+        # tensornet.layers.tt_conv_full(layers[-1],
+        #                               [3, 3],
+        #                               np.array([4,4,4],dtype=np.int32),
+        #                               np.array([4,4,4],dtype=np.int32),
+        #                               np.array([16,16,16,1],dtype=np.int32),
+        #                               [1, 1],
+        #                               cpu_variables=cpu_variables,
+        #                               biases_initializer=None,
+        #                               scope='tt_conv1.2')
 
     def fc_layer(self, bottom, in_size, out_size, name):
         with tf.variable_scope(name, reuse=None):
@@ -313,6 +341,11 @@ class ResNet:
         return npy_path
 
     def get_var_count(self):
+        count = 0
+        for v in list(self.model_var_list):
+            count += reduce(lambda x, y: x * y, v.get_shape().as_list())
+        print("Total parameter, including auxiliary variables: %d\n" % count)
+
         count = 0
         for v in list(self.var_dict.values()):
             count += reduce(lambda x, y: x * y, v.get_shape().as_list())
