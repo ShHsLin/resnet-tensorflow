@@ -16,6 +16,15 @@ reach the expected value as in the paper due to overfitting.
 ### Requirements
 Tensorflow
 
+### Commands
+
+To run the train.py, one need to specify the hyperparameter in the arguments,
+for example    
+```
+python train.py --net v1_29_tt --batch_size 64 --ckpt_dir Model/CIFAR10/v1_29_tt_reg --opt SGD --regu 0.0001 --step 0 --lr 1e-1
+```
+
+
 ### Results
 
 Train:45000, Val:5000   
@@ -23,13 +32,15 @@ ResNet56 (2+54) bottleneck channels = [16-32-64], reg 0.0001
 Accuracy: 91.8%  
 
 Train:50000, Val:10000   
-ResNet29 (2+27) bottleneck channels = [16-32-64], reg 0.0001
+ResNet29 (2+27) bottleneck channels = [16-32-64], reg 0.0001   
 Accuracy: 89% 
 ResNet29 (2+27) bottleneck channels = [16-32-64], reg 0.0003   
 Accuracy: 91.04%  
 ResNet29 (2+27) bottleneck channels = [64-128-256], reg 0.0005   
-Accuracy: 94.0%
-
+Accuracy: 94.0%   # of para: 4.9M  
+  
+ResNet29-tt (2+27) bottleneck channels = [64-128-256], reg 0    
+Accuracy: 89.3%    # of para: 0.63M    
 
 ### Links
 ResNetv1 50layers Visualization [here](http://ethereon.github.io/netscope/#/gist/db945b393d40bfa26006)     

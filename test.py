@@ -1,8 +1,14 @@
 import numpy as np
 import tensorflow as tf
 from network.resnet_v1 import resnet_v1_29 as ResNet
+#from network.resnet_v1 import resnet_v1_29_tt as ResNet
+
 import os
-import utils.CIFAR10 as CIFAR10 
+import utils.CIFAR10 as CIFAR10
+
+#ckpt_dir = 'Model/CIFAR10/TT_30_Adam'
+ckpt_dir = 'Model/CIFAR10/resnet_v1_29/wid_64_reg_5e-4'
+
 #import utils.read_data as read_data
 params={}
 params['data_path']='../CIFAR10/cifar-10-batches-py'
@@ -52,7 +58,7 @@ with tf.device('/gpu:0'):
         ## Start Session, Initialize variables, Restore Network
         sess.run(tf.global_variables_initializer())
         saver = tf.train.Saver(r.model_var_list,max_to_keep=2)
-        ckpt = tf.train.get_checkpoint_state('Model/CIFAR10')
+        ckpt = tf.train.get_checkpoint_state(ckpt_dir)
         if ckpt and ckpt.model_checkpoint_path:
             saver.restore(sess, ckpt.model_checkpoint_path)
             print("Restore from last check point")
