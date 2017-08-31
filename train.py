@@ -78,13 +78,13 @@ if __name__ == "__main__":
                 xent = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=r.logits,
                                                                       labels=true_out)
                 cost = tf.reduce_mean(xent, name='xent')
-                cost += r.weight_decay(regu) #Resnet29 should be 0.0005
+                cost += r.weight_decay(regu)
                 correct_prediction = tf.equal(tf.argmax(r.logits,1),
                                               true_out)
                 accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
                 tf.summary.scalar('cross_entropy', cost)
                 tf.summary.scalar('accuracy', accuracy)
-                ## view first 5 images ##
+                ## view first input images ##
                 tf.summary.image('input image', images_aug[:5,:,:,:])
 
             merged = tf.summary.merge_all()

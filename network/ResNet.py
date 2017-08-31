@@ -122,7 +122,7 @@ class ResNet:
                 bias = tf.nn.bias_add(conv, conv_biases)
                 return bias
 
-    def get_tt(self, in_channels, out_channels, bond_dim=30):
+    def get_tt(self, filter_size, in_channels, out_channels, bond_dim=30):
         q_in_chan = np.ones(int(np.log2(in_channels))) * 2
         q_out_chan = np.ones(int(np.log2(out_channels))) * 2
         if in_channels > out_channels:
@@ -143,6 +143,14 @@ class ResNet:
             else:
                 tt_rank[-i-1]=bond_dim
 
+        x = filter_size * filter_size
+        for i in range(len(q_in_chan)+1):
+            if x < tt_rank[i]:
+                tt_rank[i] = x
+                x = x * q_in_chan[i] * q_out_chan[i]
+            else:
+                pass
+
         print(tt_rank)
         return (np.array(q_in_chan, dtype=np.int32),
                 np.array(q_out_chan, dtype=np.int32),
@@ -152,7 +160,7 @@ class ResNet:
     def conv_layer_tt(self, bottom, filter_size, in_channels, out_channels,
                       name, stride_size=1, biases=False):
         quantized_in_channels, quantized_out_channels, tt_rank = \
-                self.get_tt(in_channels, out_channels)
+                self.get_tt(filter_size, in_channels, out_channels)
         if biases == False:
             biases_init = None
         else:

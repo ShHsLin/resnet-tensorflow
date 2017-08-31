@@ -42,14 +42,6 @@ Accuracy: 94.0%   # of para: 4.9M
 ResNet29-tt (2+27) bottleneck channels = [64-128-256], reg 0    
 Accuracy: 89.3%    # of para: 0.63M    
 
-### Links
-ResNetv1 50layers Visualization [here](http://ethereon.github.io/netscope/#/gist/db945b393d40bfa26006)     
-ResNetv2 [Identity Mappings in Deep Residual Networks](https://arxiv.org/pdf/1603.05027.pdf)    
-Wide Residual Network  [here](https://arxiv.org/pdf/1605.07146.pdf)       
-[Wider or Deeper: Revisiting the ResNet Model for Visual
-Recognition](https://arxiv.org/abs/1611.10080)    
-ResNeXt [Aggregated Residual Transformations for Deep Neural Networks](https://arxiv.org/pdf/1611.05431.pdf)
-
 ### To do list
 
 - [ ] Tensorized ResNet
@@ -57,4 +49,14 @@ ResNeXt [Aggregated Residual Transformations for Deep Neural Networks](https://a
 - [ ] Separate numpy save to utils
 - [ ] Rename slim model so one can restore and fine tune.
 - [ ] ResNet version2 as in arXiv:1603.05027
-- [ ] 
+- [ ]
+
+### Reference  
+ResNetv1 50layers Visualization [here](http://ethereon.github.io/netscope/#/gist/db945b393d40bfa26006)     
+ResNetv2 [Identity Mappings in Deep Residual Networks](https://arxiv.org/pdf/1603.05027.pdf)    
+Wide Residual Network  [here](https://arxiv.org/pdf/1605.07146.pdf)       
+[Wider or Deeper: Revisiting the ResNet Model for Visual
+Recognition](https://arxiv.org/abs/1611.10080)    
+ResNeXt [Aggregated Residual Transformations for Deep Neural Networks](https://arxiv.org/pdf/1611.05431.pdf)
+
+
