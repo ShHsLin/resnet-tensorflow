@@ -11,6 +11,7 @@ if __name__ == "__main__":
     args = parse_args()
     ckpt_dir = args.ckpt_dir  # 'Model/CIFAR10/TT_30_Adam'
     which_resnet = args.which_resnet
+    bond_dim = args.bond_dim
 
     params={}
     params['data_path']='../CIFAR10/cifar-10-batches-py'
@@ -44,7 +45,8 @@ if __name__ == "__main__":
             r = select_net(which_resnet,
                            input_rgb=images,
                            num_classes=num_classes,
-                           is_training=True)
+                           is_training=True,
+                           bond_dim=bond_dim)
 #             r = ResNet(input_rgb=images,
 #                        num_classes=num_classes, is_training=False)
             print('ResNet graph build, with # variables: %d' % r.get_var_count())

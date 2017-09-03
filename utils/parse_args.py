@@ -25,10 +25,15 @@ def parse_args():
     parser.add_argument('--regu', dest='regu',
                         help='coefficient for regularization',
                         default=0.0001, type=float)
-    parser.add_argument('--step', dest='global_step',
+    parser.add_argument('--init_step', dest='global_step',
                         help='global step in training',
                         default=0, type=int)
-
+    parser.add_argument('--iter', dest='num_iter',
+                        help='number of iteration to train',
+                        default=50000, type=int)
+    parser.add_argument('--bond_dim', dest='bond_dim',
+                        help='bond dimension for tt-rank',
+                        default=30, type=int)
 
 
     if len(sys.argv) == 1:

@@ -2,7 +2,7 @@ from network.resnet_v1 import resnet_v1_29
 from network.resnet_v1 import resnet_v1_29_tt
 
 
-def select_net(which_net, input_rgb, num_classes, is_training=True):
+def select_net(which_net, input_rgb, num_classes, is_training=True, bond_dim=30):
     if which_net == "v1_29":
         net = resnet_v1_29(input_rgb=input_rgb,
                            num_classes=num_classes,
@@ -10,7 +10,8 @@ def select_net(which_net, input_rgb, num_classes, is_training=True):
     elif which_net == "v1_29_tt":
         net = resnet_v1_29_tt(input_rgb=input_rgb,
                               num_classes=num_classes,
-                              is_training=is_training)
+                              is_training=is_training,
+                              bond_dim=bond_dim)
     else:
         raise NotImplementedError
 

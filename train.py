@@ -34,6 +34,8 @@ if __name__ == "__main__":
     which_opt = args.which_opt
     regu = args.regu
     global_step = args.global_step
+    num_iter = args.num_iter
+    bond_dim = args.bond_dim
 
     params = {'batch_size': batch_size,
               'data_path': '../CIFAR10/cifar-10-batches-py'}
@@ -70,7 +72,8 @@ if __name__ == "__main__":
             r = select_net(args.which_resnet,
                            input_rgb=images_aug,
                            num_classes=num_classes,
-                           is_training=True)
+                           is_training=True,
+                           bond_dim=bond_dim)
             print('ResNet graph build, with # variables: %d' % r.get_var_count())
 
             ## Define Cost, Summary ##
@@ -134,7 +137,7 @@ if __name__ == "__main__":
 
 
             ## Start Training ##
-            for step_idx in range(global_step+1, global_step+50000+1):
+            for step_idx in range(global_step+1, global_step+num_iter+1):
                 x_batch, y_batch = CIFAR10.next_train_batch()
                 sess.run([train_step], feed_dict={images: x_batch,
                                                   true_out: y_batch,

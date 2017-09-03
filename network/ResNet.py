@@ -10,7 +10,7 @@ import tensornet
 
 class ResNet:
     def __init__(self, npy_path=None, is_training=True, dropout=0.5,
-                 input_rgb=None, num_classes=1000):
+                 input_rgb=None, num_classes=1000, bond_dim=30):
         if npy_path is not None:
             self.data_dict = np.load(npy_path, encoding='latin1').item()
         else:
@@ -22,6 +22,7 @@ class ResNet:
         self.dropout = dropout
         self.num_classes = num_classes
         self.bn_train_ops = []
+        self.bond_dim = bond_dim
 ##        with tf.variable_scope('resnet_v1_50', reuse=None):
 ##            self.build(input_rgb)
 ##
@@ -64,7 +65,7 @@ class ResNet:
 
 
     def bottleneck_residual_tt(self, x, in_channel, out_channel, name,
-                               stride_size=2, bond_dim=16):
+                               stride_size=2):
         with tf.variable_scope(name, reuse=None):
             # Identity shortcut
             if in_channel == out_channel:
@@ -122,7 +123,8 @@ class ResNet:
                 bias = tf.nn.bias_add(conv, conv_biases)
                 return bias
 
-    def get_tt(self, filter_size, in_channels, out_channels, bond_dim=30):
+    def get_tt(self, filter_size, in_channels, out_channels):
+        bond_dim = self.bond_dim
         q_in_chan = np.ones(int(np.log2(in_channels))) * 2
         q_out_chan = np.ones(int(np.log2(out_channels))) * 2
         if in_channels > out_channels:
@@ -281,6 +283,11 @@ class ResNet:
             if var.op.name.find(r'weights') > 0:
                 costs.append(tf.nn.l2_loss(var))
                 # tf.summary.histogram(var.op.name, var)
+            # tt-layer
+            elif var.op.name.find(r'filters') > 0:
+                costs.append(tf.nn.l2_loss(var))
+            elif var.op.name.find(r'core') > 0:
+                costs.append(tf.nn.l2_loss(var))
 
         return tf.multiply(decay_rate, tf.reduce_sum(costs))
 

@@ -78,9 +78,9 @@ class resnet_v1_29(ResNet):
 
 class resnet_v1_29_tt(ResNet):
     def __init__(self, npy_path=None, is_training=True, dropout=0.5,
-                 input_rgb=None, num_classes=1000):
+                 input_rgb=None, num_classes=1000, bond_dim=30):
         ResNet.__init__(self, npy_path, is_training, dropout,
-                        input_rgb, num_classes)
+                        input_rgb, num_classes, bond_dim)
 
         with tf.variable_scope('resnet_v1_29_tt', reuse=None):
             self.build(input_rgb)
