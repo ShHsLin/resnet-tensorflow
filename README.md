@@ -16,7 +16,8 @@ reach the expected value as in the paper due to overfitting.
 ![](Figures/cifar10.png) 
 
 ### Requirements
-python2.7, Tensorflow
+python2.7, tensorflow 1.0 or later version
+ 
 
 ### Commands
 
@@ -43,6 +44,10 @@ then change the pretrain in train.py as True, put the pretrain model in
 corresponding folder. One can then load the pretrain model and fine tune.
 
 
+### Data Augmentation
+Zero padding to 40x40, random crop to 32x32, random horizontal flipping, per
+image whitening ( per image standardization)
+
 
 ### Results
 
@@ -52,9 +57,9 @@ Accuracy: 91.8%
 
 Train:50000, Val:10000   
 ResNet29 (2+27) bottleneck channels = [16-32-64], reg 0.0001   
-Accuracy: 89% 
+Accuracy: 89%   
 ResNet29 (2+27) bottleneck channels = [16-32-64], reg 0.0003   
-Accuracy: 91.04%  
+Accuracy: 91.04%   
 ResNet29 (2+27) bottleneck channels = [64-128-256], reg 0.0005   
 Accuracy: 94.0%   # of para: 4.9M  
   

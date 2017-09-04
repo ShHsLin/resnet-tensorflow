@@ -3,8 +3,8 @@ import numpy as np
 from tensorflow.python.training import moving_averages
 from functools import reduce
 import sys
-sys.path.append('/usr/prakt/s032/TensorNet-TF/')
-import tensornet
+#sys.path.append('/usr/prakt/s032/TensorNet-TF/')
+import network.tensornet as tensornet
 
 
 
